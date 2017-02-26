@@ -4,6 +4,7 @@ contract test{
         string selfData;
         string secretDataHash;
         bool isUserDead;
+        uint256 lastResponseRecordedTime;
     }
     struct EmergencyUserList{
         string name;
@@ -30,12 +31,14 @@ contract test{
     function setSelfDetail(string _selfDataHash) {
         if (users[msg.sender].isUserDead == false){
         users[msg.sender].selfData = _selfDataHash;
+        users[msg.sender].lastResponseRecordedTime = now;
         }
     }
     ///get the self details
     function getSelfDetail() constant returns(string){
         if (users[msg.sender].isUserDead == false){
         return users[msg.sender].selfData;
+        users[msg.sender].lastResponseRecordedTime = now;
         }
     }
     ///set the secret info details
@@ -43,12 +46,14 @@ contract test{
         if (users[msg.sender].isUserDead == false){
             users[msg.sender].secretDataHash = _secretDataHash;
             alertCount[msg.sender] = 0;
+            users[msg.sender].lastResponseRecordedTime = now;
         }
     }
     ///get the secret info details
     function getSecretInfo()constant returns (string){
         if (users[msg.sender].isUserDead == false){
             return users[msg.sender].secretDataHash;
+            users[msg.sender].lastResponseRecordedTime = now;
         }
         else 
             return "No Such User Exist or User is Dead";
@@ -62,6 +67,7 @@ contract test{
         beneficiaryDetails[msg.sender][_address].isEmerContactDead = false;
         BeneficiaryLists[msg.sender][countOfMyAddedBeneficiary[msg.sender]++] = _address ;
         listOfthosePeopleWhoHaveMadeMeTheirBeneficiary[_address][individualCountOfWhomImABeneficaryOf[_address]++] = msg.sender;
+        users[msg.sender].lastResponseRecordedTime = now;
         //event beneficiary Added
         BeneficiaryAdded(msg.sender, _address , _name, "Beneficiary added successfully.");
     }
@@ -75,6 +81,7 @@ contract test{
         ValidatorDetails[msg.sender][_address].isEmerContactDead = false;
         ValidatorLists[msg.sender][countOfMyAddedValidator[msg.sender]++] = _address ;
         listOfthosePeopleWhoHaveMadeMeTheirValidator[_address][individualCountOfWhomImAValidatorOf[_address]++] = msg.sender;
+        users[msg.sender].lastResponseRecordedTime = now;
         //event beneficiary Added
         ValidatorAdded(msg.sender, _address , _name, "Validator added successfully.");
          }
@@ -84,9 +91,8 @@ contract test{
     // how would I know that now is the 30 days
     // in case of No Response, we shall call increaseAlertCounter method
     function increaseAlertCounter(address _address){
-        alertCount[_address]++;
-        if (alertCount[_address]>5){
-            users[_address].isUserDead = true;
+        if ((users[_address].lastResponseRecordedTime+15552000) < now){//180 days in seconds are 15552000
+            users[_address].isUserDead = true;//hypothetically
           NoReponseSinceLast180Days(_address,"We got no response from this address in last 180 days. send email to BENEF/VALIDATOR") ;
         }
     }
@@ -94,13 +100,21 @@ contract test{
     function resetAlertCounter(address _address){
         alertCount[_address]=0;
         users[_address].isUserDead = false;
+        users[msg.sender].lastResponseRecordedTime = now;
     }
     
     function OfficiallyDead(address _address){
         users[_address].isUserDead = true;
     }
     
-    function NotDead (){
+    function ValidateAddress(address _address) constant returns (bool){
+        if ((users[_address].lastResponseRecordedTime+15552000) < now){
+           return false; 
+        }
+    else {
+        return true;
+    }
         
     }
+    
 }
